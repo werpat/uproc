@@ -1,0 +1,232 @@
+\newcommand{\DoubleImage}{true}	%Diagramms: Two on one page?
+
+\documentclass{beamer}
+
+%% \usepackage[ngermanb.sty]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{ifthen}
+
+%\usepackage[demo]{graphicx}
+\usepackage[compatibility=false]{caption}
+\usepackage{subcaption}
+
+\usepackage{color}
+\lstdefinestyle{customc}{
+  belowcaptionskip=1\baselineskip,
+  breaklines=true,
+%  frame=L,
+  xleftmargin=\parindent,
+%  language=C,
+  showstringspaces=false,
+  basicstyle=\footnotesize\ttfamily,
+  keywordstyle=\bfseries\color{green!40!black},
+  commentstyle=\itshape\color{purple!40!black},
+  identifierstyle=\color{blue},
+  stringstyle=\color{orange},
+}
+
+\usetheme{Berlin}		%Szeged
+\usecolortheme{dolphin}	%beaver
+
+\setbeamercovered{transparent}
+\beamertemplatenavigationsymbolsempty
+%\setbeamertemplate{footline}[frame number]
+
+%% Variablen - anpassen!
+\newcommand{\theauthor}{24219ff18510f65b915cbdbed33baf3d}
+
+\newcommand{\thedate}{November 30, 2015}
+
+\newboolean{DoublePaged} 
+\setboolean{DoublePaged}{\DoubleImage} 
+
+
+\title{toupper}
+\subtitle{Exercise 1}
+\author{\theauthor}
+%\institute[LRR TUM]{LRR, I10\\ TU München}
+\date{\thedate}
+
+\begin{document}
+
+\frame{
+	\titlepage
+}
+
+
+\begin{frame}[fragile]
+  \frametitle{toupper\_simple}
+  
+\begin{lstlisting}[language=c,style=customc]
+static void toupper_simple(char * text) {
+    char c;
+    while((c=*text) != 0){
+        *text++=c & 0xdf;
+    }
+}
+\end{lstlisting}
+  
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{toupper\_128\_npw}
+  
+\begin{lstlisting}[language=c,style=customc]
+unsigned char c[] = {0xdf};
+static void toupper_128_npw(char *text){
+    asm(
+        ".intel_syntax noprefix             \n" 
+        "   VPXOR xmm1,xmm1,xmm1            \n"
+        "   VPBROADCASTB xmm2, [%1]         \n" 
+        "loop_128_npw:                      \n"
+        "   VPAND xmm3, xmm2, [rdi]         \n" 
+        "   VPCMPISTRM xmm1, xmm3, 0x58     \n" 
+        "   VMASKMOVDQU xmm3, xmm0          \n" 
+        "   LEA rdi, [rdi+16]               \n" 
+        "   JNZ loop_128_npw                \n"
+        ".att_syntax                        \n" 
+        : /* no output registers*/
+        : "D"(text), "r"(c)
+        : "xmm0", "xmm1", "xmm2", "xmm3");
+}
+\end{lstlisting}
+  
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{toupper\_128\_pw\_strm}
+  
+\begin{lstlisting}[language=c,style=customc]
+unsigned char c[] = {0xdf};
+static void toupper_128_pw_strm(char *text){
+    asm(
+        ".intel_syntax noprefix             \n"
+        "   VPXOR xmm1,xmm1,xmm1            \n"
+        "   VPBROADCASTB xmm2, [%1]         \n"
+        "loop_128_pw_strm:                  \n"
+        "   VPAND xmm3, xmm2, [rdi]         \n"
+        "   VPCMPISTRM xmm1, xmm3, 0x58     \n"
+        "   VMOVDQU [rdi], xmm3             \n"
+        "   LEA rdi, [rdi+16]               \n" 
+        "   JNZ loop_128_pw_strm            \n"
+        ".att_syntax                        \n"
+        : /* no output registers*/
+        : "D"(text), "r"(c)
+        : "xmm0", "xmm1", "xmm2", "xmm3");
+}
+\end{lstlisting}
+  
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{toupper\_128\_pw\_cmpb}
+  
+\begin{lstlisting}[language=c,style=customc]
+unsigned char c[] = {0xdf};
+static void toupper_128_pw_cmpb(char *text){
+    asm(
+        ".intel_syntax noprefix             \n" 
+        "   VPXOR xmm1,xmm1,xmm1            \n"
+        "   VPBROADCASTB xmm2, [%1]         \n"
+        "loop_128_pw_cmpb:                  \n"
+        "   VPAND xmm3, xmm2, [rdi]         \n"
+        "   VMOVDQU [rdi], xmm3             \n"
+        "   VPCMPEQB xmm0, xmm3, xmm1       \n"
+        "   VPTEST xmm0, xmm0               \n"
+        "   LEA rdi, [rdi+16]               \n"
+        "   JZ loop_128_pw_cmpb             \n"
+        ".att_syntax                        \n"
+        : /* no output registers*/
+        : "D"(text), "r"(c)
+        : "xmm0", "xmm1", "xmm2", "xmm3");
+}
+\end{lstlisting}
+  
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+  \frametitle{toupper\_256\_pw\_cmpb}
+  
+\begin{lstlisting}[language=c,style=customc]
+unsigned char c[] = {0xdf};
+static void toupper_256_pw(char *text){
+    asm(
+        ".intel_syntax noprefix             \n"
+        "   VPXOR ymm1,ymm1,ymm1            \n"
+        "   VPBROADCASTB ymm2, [%1]         \n"
+        "loop_256_pw:                       \n"
+        "   VPAND ymm3, ymm2, [rdi]         \n"
+        "   VMOVDQU [rdi], ymm3             \n"
+        "   VPCMPEQB ymm0, ymm3, ymm1       \n"
+        "   VPTEST ymm0, ymm0               \n"
+        "   LEA rdi, [rdi+32]               \n"
+        "   JZ loop_256_pw                  \n"
+        ".att_syntax                        \n"
+        : /* no output registers*/
+        : "D"(text), "r"(c)
+        : "ymm0", "ymm1", "ymm2", "ymm3");
+}
+\end{lstlisting}
+  
+\end{frame}
+
+
+\newcounter{ctra}
+\setcounter{ctra}{1}
+\whiledo {\value{ctra} < 5}%
+{%
+%\thectra {\large \ding{111}}%
+
+
+\ifthenelse{\boolean{DoublePaged}}{
+\begin{frame}
+  \frametitle{R\the\value{ctra}}
+% \includegraphics[width=0.9\textwidth]{../{r1.time}.pdf}
+ 
+ \begin{figure}
+\begin{subfigure}{.5\textwidth}
+  \centering
+	\includegraphics[width=\textwidth]{../{r\the\value{ctra}.time}.pdf}
+  \caption{Runtime}
+  \label{fig:sfig1}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  	\includegraphics[width=\textwidth]{../{r\the\value{ctra}.speedup}.pdf}
+  \caption{Speedup}
+  \label{fig:sfig2}
+\end{subfigure}
+%\caption{plots of R1}
+\label{fig:fig}
+\end{figure}
+\end{frame}
+}
+{
+\begin{frame}
+  \frametitle{R\the\value{ctra} - Runtime}
+\begin{figure}
+\centering
+	\includegraphics[width=0.9\textwidth]{../{r\the\value{ctra}.time}.pdf}
+  %\caption{Runtime}
+  \end{figure}
+\end{frame}
+\begin{frame}
+  \frametitle{R\the\value{ctra} - Speedup}
+\begin{figure}
+\centering
+	\includegraphics[width=0.9\textwidth]{../{r\the\value{ctra}.speedup}.pdf}
+  %\caption{Runtime}
+  \end{figure}
+\end{frame}
+}
+
+\stepcounter {ctra}%
+}
+\end{document}

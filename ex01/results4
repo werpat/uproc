@@ -1,0 +1,8 @@
+VARIANT4: gcc -lm -march=native toupper.c -O3
+Size: 268435456 	Ratio: 50.000000 	Running time:	simple: 0.101416	optimised128npw: 0.045821	optimised128pwstrm: 0.028980	optimised128pwcmpb: 0.026484	optimised256pw: 0.025595
+Size: 536870912 	Ratio: 50.000000 	Running time:	simple: 0.202806	optimised128npw: 0.091148	optimised128pwstrm: 0.053001	optimised128pwcmpb: 0.052742	optimised256pw: 0.051100
+Size: 805306368 	Ratio: 50.000000 	Running time:	simple: 0.304212	optimised128npw: 0.139402	optimised128pwstrm: 0.081144	optimised128pwcmpb: 0.081692	optimised256pw: 0.079021
+Size: 1073741824 	Ratio: 50.000000 	Running time:	simple: 0.406421	optimised128npw: 0.182656	optimised128pwstrm: 0.107853	optimised128pwcmpb: 0.105456	optimised256pw: 0.101996
+Size: 1342177280 	Ratio: 50.000000 	Running time:	simple: 0.508198	optimised128npw: 0.230210	optimised128pwstrm: 0.132147	optimised128pwcmpb: 0.131872	optimised256pw: 0.129207
+Size: 1610612736 	Ratio: 50.000000 	Running time:	simple: 0.609347	optimised128npw: 0.276086	optimised128pwstrm: 0.158326	optimised128pwcmpb: 0.158215	optimised256pw: 0.152944
+Size: 1879048192 	Ratio: 50.000000 	Running time:	simple: 0.721310	optimised128npw: 0.319098	optimised128pwstrm: 0.184982	optimised128pwcmpb: 0.184732	optimised256pw: 0.181181
